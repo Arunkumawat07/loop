@@ -1,0 +1,145 @@
+// Project LOOP — Prisma schema
+// Mirrors Section 07 (Data Model) of the Zidio brief.
+// Every tenant-owned table carries a workspaceId — this is what tenant isolation is built on.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  ANALYST
+  VIEWER
+}
+
+enum Sentiment {
+  POS
+  NEU
+  NEG
+}
+
+enum FeedbackStatus {
+  NEW
+  REVIEWED
+  ACTIONED
+}
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  users     User[]
+  feedback  Feedback[]
+  themes    Theme[]
+  reports   Report[]
+
+  @@map("workspaces")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(VIEWER)
+  createdAt    DateTime @default(now())
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  reports Report[] @relation("ReportGeneratedBy")
+
+  @@index([workspaceId])
+  @@map("users")
+}
+
+model Feedback {
+  id            String         @id @default(cuid())
+  content       String         @db.Text
+  channel       String // e.g. "support_ticket" | "app_store" | "nps" | "sales_call" | "community"
+  sourceRef     String?
+  customerLabel String?
+
+  sentiment      Sentiment?
+  sentimentScore Float? // -1..1
+  status         FeedbackStatus @default(NEW)
+
+  createdAt DateTime @default(now())
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  themes    FeedbackTheme[]
+  embedding Embedding?
+
+  @@index([workspaceId])
+  @@index([workspaceId, status])
+  @@index([workspaceId, sentiment])
+  @@index([workspaceId, channel])
+  @@index([workspaceId, createdAt])
+  @@map("feedback")
+}
+
+model Theme {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  color       String  @default("#7C6EF2")
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  feedback FeedbackTheme[]
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
+  @@map("themes")
+}
+
+model FeedbackTheme {
+  feedbackId String
+  themeId    String
+  confidence Float @default(1.0) // 0..1
+
+  feedback Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  theme    Theme    @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@id([feedbackId, themeId])
+  @@map("feedback_themes")
+}
+
+model Embedding {
+  id         String @id @default(cuid())
+  feedbackId String @unique
+  // Stored as JSON array of floats for portability without pgvector.
+  // Swap to `Unsupported("vector")` + pgvector extension for production-grade ANN search.
+  vector     Json
+
+  feedback Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+
+  @@map("embeddings")
+}
+
+model Report {
+  id          String   @id @default(cuid())
+  title       String
+  periodStart DateTime
+  periodEnd   DateTime
+  contentJson Json
+  createdAt   DateTime @default(now())
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  generatedById String
+  generatedBy   User   @relation("ReportGeneratedBy", fields: [generatedById], references: [id])
+
+  @@index([workspaceId])
+  @@map("reports")
+}
