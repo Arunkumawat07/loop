@@ -45,6 +45,38 @@ export const reportGenerateSchema = z.object({
   periodEnd: z.coerce.date(),
 });
 
+// C3, acceptance criterion 2: CSV bulk import. The client parses the CSV
+// (Papaparse) and POSTs an array of raw rows here; this schema is what
+// each row must satisfy to be imported. Failed rows are reported back
+// with a reason instead of silently dropped.
+export const csvRowSchema = z.object({
+  content: z.string().min(1, "content is required"),
+  channel: z.enum([
+    "support_ticket",
+    "app_store",
+    "nps",
+    "sales_call",
+    "community",
+  ]),
+  customer_label: z.string().optional(),
+  created_at: z.string().optional(),
+});
+
+export const csvImportSchema = z.object({
+  rows: z.array(z.record(z.string(), z.string())).min(1).max(2000),
+});
+
+export const simulateChannelSchema = z.object({
+  channel: z.enum([
+    "support_ticket",
+    "app_store",
+    "nps",
+    "sales_call",
+    "community",
+  ]),
+  count: z.coerce.number().int().min(1).max(50).default(15),
+});
+
 // AI classification response — this is what we force Claude's output to
 // match (Section 09.1). Parse the model's JSON through this before saving.
 export const classificationResultSchema = z.object({
