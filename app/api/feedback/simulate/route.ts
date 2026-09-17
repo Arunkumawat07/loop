@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireRole } from "@/lib/guard";
 import { simulateChannelSchema } from "@/lib/validation/schemas";
+import { classifyBatch } from "@/lib/classification";
 
 // POST /api/feedback/simulate — C3, acceptance criterion 3.
 // The brief explicitly excludes real third-party integrations (Section
@@ -57,17 +58,27 @@ export async function POST(req: NextRequest) {
   const { channel, count } = parsed.data;
   const pool = BANK[channel];
 
-  const rows = Array.from({ length: count }, (_, i) => ({
-    content: pool[i % pool.length],
-    channel,
-    status: "NEW" as const,
-    workspaceId: session.workspaceId,
-  }));
+  // Individual creates (not createMany) so we can collect ids to classify.
+  const createdIds: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const created = await db.feedback.create({
+      data: {
+        content: pool[i % pool.length],
+        channel,
+        status: "NEW",
+        workspaceId: session.workspaceId,
+      },
+    });
+    createdIds.push(created.id);
+  }
 
-  const created = await db.feedback.createMany({ data: rows });
+  // AI1 — classify the simulated batch just like any other ingestion path.
+  if (createdIds.length > 0) {
+    await classifyBatch(createdIds, session.workspaceId);
+  }
 
   return NextResponse.json(
-    { importedCount: created.count, channel },
+    { importedCount: createdIds.length, channel },
     { status: 201 }
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import Papa from "papaparse";
 import { StatusBadge, SentimentBadge } from "@/components/status-badge";
 import { Pagination } from "@/components/pagination";
@@ -29,9 +30,13 @@ type Filters = {
   channel: string;
   sentiment: string;
   status: string;
+  themeId: string;
 };
 
 export function InboxClient({ canEdit }: { canEdit: boolean }) {
+  const searchParams = useSearchParams();
+  const initialThemeId = searchParams.get("themeId") ?? "";
+
   const [items, setItems] = useState<FeedbackItem[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -43,6 +48,7 @@ export function InboxClient({ canEdit }: { canEdit: boolean }) {
     channel: "",
     sentiment: "",
     status: "",
+    themeId: initialThemeId,
   });
 
   const [showAddForm, setShowAddForm] = useState(false);
@@ -53,6 +59,7 @@ export function InboxClient({ canEdit }: { canEdit: boolean }) {
   const [importSummary, setImportSummary] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
   const [simulating, setSimulating] = useState(false);
+  const [reclassifyingId, setReclassifyingId] = useState<string | null>(null);
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
@@ -62,6 +69,7 @@ export function InboxClient({ canEdit }: { canEdit: boolean }) {
     if (filters.channel) params.set("channel", filters.channel);
     if (filters.sentiment) params.set("sentiment", filters.sentiment);
     if (filters.status) params.set("status", filters.status);
+    if (filters.themeId) params.set("themeId", filters.themeId);
 
     try {
       const res = await fetch(`/api/feedback?${params.toString()}`);
@@ -93,6 +101,20 @@ export function InboxClient({ canEdit }: { canEdit: boolean }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     });
+  }
+
+  // AI1, criterion 4 — manual re-classify action.
+  async function handleReclassify(id: string) {
+    setReclassifyingId(id);
+    try {
+      const res = await fetch(`/api/feedback/${id}/classify`, { method: "POST" });
+      if (res.ok) {
+        const updated = await res.json();
+        setItems((prev) => prev.map((i) => (i.id === id ? updated : i)));
+      }
+    } finally {
+      setReclassifyingId(null);
+    }
   }
 
   async function handleAddSubmit(e: React.FormEvent) {
@@ -266,6 +288,15 @@ export function InboxClient({ canEdit }: { canEdit: boolean }) {
           <option value="REVIEWED">Reviewed</option>
           <option value="ACTIONED">Actioned</option>
         </select>
+        {filters.themeId && (
+          <button
+            onClick={() => updateFilter("themeId", "")}
+            className="flex items-center gap-1 rounded-md border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-sm text-indigo-700 hover:bg-indigo-100"
+          >
+            Theme filter active
+            <span aria-hidden>×</span>
+          </button>
+        )}
       </div>
 
       {/* Table */}
@@ -288,9 +319,11 @@ export function InboxClient({ canEdit }: { canEdit: boolean }) {
               <tr>
                 <th className="px-4 py-2 font-medium">Content</th>
                 <th className="px-4 py-2 font-medium">Channel</th>
+                <th className="px-4 py-2 font-medium">Themes</th>
                 <th className="px-4 py-2 font-medium">Sentiment</th>
                 <th className="px-4 py-2 font-medium">Status</th>
                 <th className="px-4 py-2 font-medium">Date</th>
+                {canEdit && <th className="px-4 py-2 font-medium">AI</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -298,6 +331,22 @@ export function InboxClient({ canEdit }: { canEdit: boolean }) {
                 <tr key={item.id} className="align-top hover:bg-slate-50">
                   <td className="max-w-md px-4 py-3 text-slate-800">{item.content}</td>
                   <td className="px-4 py-3 text-slate-600">{CHANNEL_LABELS[item.channel] ?? item.channel}</td>
+                  <td className="max-w-[160px] px-4 py-3">
+                    <div className="flex flex-wrap gap-1">
+                      {item.themes.length === 0 && (
+                        <span className="text-xs text-slate-400">—</span>
+                      )}
+                      {item.themes.map(({ theme }) => (
+                        <span
+                          key={theme.id}
+                          className="rounded-full px-2 py-0.5 text-[11px] font-medium"
+                          style={{ backgroundColor: `${theme.color}20`, color: theme.color }}
+                        >
+                          {theme.name}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
                   <td className="px-4 py-3">
                     <SentimentBadge sentiment={item.sentiment} />
                   </td>
@@ -311,6 +360,17 @@ export function InboxClient({ canEdit }: { canEdit: boolean }) {
                   <td className="whitespace-nowrap px-4 py-3 text-xs text-slate-400">
                     {new Date(item.createdAt).toLocaleDateString()}
                   </td>
+                  {canEdit && (
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => handleReclassify(item.id)}
+                        disabled={reclassifyingId === item.id}
+                        className="text-xs font-medium text-indigo-600 hover:text-indigo-700 disabled:opacity-50"
+                      >
+                        {reclassifyingId === item.id ? "..." : "Re-classify"}
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

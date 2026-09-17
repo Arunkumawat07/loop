@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireRole } from "@/lib/guard";
 import { csvImportSchema, csvRowSchema } from "@/lib/validation/schemas";
+import { classifyBatch } from "@/lib/classification";
 
 // POST /api/feedback/import — C3, acceptance criterion 2.
 // The client parses the CSV (Papaparse) in the browser and sends the
@@ -62,23 +63,35 @@ export async function POST(req: NextRequest) {
     });
   });
 
-  if (toCreate.length > 0) {
-    // createMany is one round-trip instead of N — matters once you're
-    // importing hundreds of rows.
-    const created = await db.feedback.createMany({
-      data: toCreate.map((row) => ({
-        content: row.content,
-        channel: row.channel,
-        customerLabel: row.customerLabel,
-        status: "NEW",
-        workspaceId: session.workspaceId,
-        ...(row.createdAt && { createdAt: row.createdAt }),
-      })),
-    });
-    results.importedCount = created.count;
+  const createdIds: string[] = [];
 
-    // TODO (Week 3 / AI1): enqueue these newly created rows for
-    // classification instead of leaving them unclassified.
+  if (toCreate.length > 0) {
+    // Individual creates (not createMany) so we get each row's id back —
+    // needed to classify every imported item afterward. At this
+    // project's row counts (up to 2,000 per the schema cap) this is
+    // fine; a higher-volume system would batch-insert then classify via
+    // a background job queue instead.
+    for (const row of toCreate) {
+      const created = await db.feedback.create({
+        data: {
+          content: row.content,
+          channel: row.channel,
+          customerLabel: row.customerLabel,
+          status: "NEW",
+          workspaceId: session.workspaceId,
+          ...(row.createdAt && { createdAt: row.createdAt }),
+        },
+      });
+      createdIds.push(created.id);
+    }
+    results.importedCount = createdIds.length;
+  }
+
+  // AI1 — classify every newly imported row. Sequential and awaited
+  // inline; for very large CSVs this is the first thing you'd move to a
+  // background job if response time became a problem.
+  if (createdIds.length > 0) {
+    await classifyBatch(createdIds, session.workspaceId);
   }
 
   return NextResponse.json(results, { status: 201 });

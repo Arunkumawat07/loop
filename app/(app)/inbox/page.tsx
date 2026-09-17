@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { auth } from "@/lib/auth";
 import { InboxClient } from "@/components/inbox-client";
 
@@ -19,7 +20,9 @@ export default async function InboxPage() {
       </p>
 
       <div className="mt-6">
-        <InboxClient canEdit={canEdit} />
+        <Suspense fallback={<p className="text-sm text-slate-500">Loading...</p>}>
+          <InboxClient canEdit={canEdit} />
+        </Suspense>
       </div>
     </main>
   );

@@ -1,6 +1,62 @@
 import { db } from "@/lib/db";
 import { subDays, format, startOfDay } from "date-fns";
 
+const PERIOD_DAYS = 7;
+const SPIKE_THRESHOLD_PCT = 30;
+const MIN_COUNT_FOR_SPIKE = 3;
+
+// AI2 — theme trends with week-over-week spike detection. Shared by
+// /api/insights/trends (for programmatic access) and the Trends page
+// (server component, calls this directly rather than round-tripping
+// through its own API).
+export async function getThemeTrends(workspaceId: string) {
+  const now = new Date();
+  const currentStart = startOfDay(subDays(now, PERIOD_DAYS));
+  const previousStart = startOfDay(subDays(now, PERIOD_DAYS * 2));
+
+  const themes = await db.theme.findMany({
+    where: { workspaceId },
+    include: {
+      feedback: {
+        include: { feedback: { select: { createdAt: true } } },
+      },
+    },
+  });
+
+  const trends = themes.map((theme) => {
+    const currentCount = theme.feedback.filter(
+      (ft) => ft.feedback.createdAt >= currentStart
+    ).length;
+    const previousCount = theme.feedback.filter(
+      (ft) => ft.feedback.createdAt >= previousStart && ft.feedback.createdAt < currentStart
+    ).length;
+
+    const percentChange =
+      previousCount === 0
+        ? currentCount > 0
+          ? 100
+          : 0
+        : Math.round(((currentCount - previousCount) / previousCount) * 100);
+
+    const isSpiking =
+      currentCount >= MIN_COUNT_FOR_SPIKE && percentChange >= SPIKE_THRESHOLD_PCT;
+
+    return {
+      themeId: theme.id,
+      name: theme.name,
+      color: theme.color,
+      currentCount,
+      previousCount,
+      percentChange,
+      isSpiking,
+      totalCount: theme.feedback.length,
+    };
+  });
+
+  trends.sort((a, b) => b.currentCount - a.currentCount);
+  return { periodDays: PERIOD_DAYS, trends };
+}
+
 export async function getDashboardSummary(workspaceId: string, days = 30) {
   const since = startOfDay(subDays(new Date(), days));
 

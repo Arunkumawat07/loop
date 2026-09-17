@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { requireRole } from "@/lib/guard";
 import { feedbackCreateSchema, feedbackQuerySchema } from "@/lib/validation/schemas";
 import { Prisma } from "@prisma/client";
+import { classifyAndStoreFeedback } from "@/lib/classification";
 
 // GET /api/feedback — the Inbox (C4). Server-side pagination, search,
 // and filters by channel/sentiment/status/theme/date range. Every query
@@ -85,9 +86,21 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // TODO (Week 3 / AI1): enqueue this item for Claude classification here
-  // instead of leaving it unclassified. See lib/ai.ts once you build it —
-  // classify on ingest, store the result, never recompute on page load.
+  // AI1 — classify on ingest, store the result, never recompute on page
+  // load. Awaited inline (not queued) for simplicity at this project's
+  // scale; a production system would push this onto a background job.
+  // A classification failure must never fail the user's create request —
+  // the item just stays unclassified and can be retried via the manual
+  // re-classify endpoint.
+  const classifyResult = await classifyAndStoreFeedback(feedback.id, session.workspaceId);
+  if (!classifyResult.ok) {
+    console.error(`Auto-classification failed for ${feedback.id}: ${classifyResult.error}`);
+  }
 
-  return NextResponse.json(feedback, { status: 201 });
+  const withThemes = await db.feedback.findUnique({
+    where: { id: feedback.id },
+    include: { themes: { include: { theme: true } } },
+  });
+
+  return NextResponse.json(withThemes, { status: 201 });
 }
