@@ -1,22 +1,8 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { classificationResultSchema } from "@/lib/validation/schemas";
+import { anthropicClient, MODEL, stripCodeFences } from "@/lib/ai-client";
 import type { z } from "zod";
 
-// Server-side only. This file must never be imported into a "use client"
-// component — the API key would end up in the browser bundle.
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
-// Pinned model alias. If Anthropic deprecates this alias, swap it here —
-// nowhere else in the app references a model string directly.
-const MODEL = "claude-sonnet-4-5";
-
 export type ClassificationResult = z.infer<typeof classificationResultSchema>;
-
-function stripCodeFences(text: string): string {
-  // Claude sometimes wraps JSON in ```json ... ``` even when told not to.
-  // Strip fences defensively before parsing rather than trusting raw output.
-  return text.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
-}
 
 /**
  * AI1 — Auto-classification (Section 09.1).
@@ -57,7 +43,7 @@ Return ONLY a JSON object, no markdown fences, no commentary, matching exactly t
 }`;
 
   async function attempt(): Promise<ClassificationResult> {
-    const response = await anthropic.messages.create({
+    const response = await anthropicClient.messages.create({
       model: MODEL,
       max_tokens: 500,
       messages: [{ role: "user", content: prompt }],
@@ -137,7 +123,7 @@ Return ONLY a JSON object, no markdown fences:
   "usedIndices": [number, ...] (the bracket numbers you actually cited, e.g. [1, 3])
 }`;
 
-  const response = await anthropic.messages.create({
+  const response = await anthropicClient.messages.create({
     model: MODEL,
     max_tokens: 600,
     messages: [{ role: "user", content: prompt }],

@@ -1,10 +1,37 @@
 import { z } from "zod";
 
+// Password must contain at least one uppercase letter, one lowercase
+// letter, one number, and one special character — enforced both here
+// (server-side, the real gate) and visually in the UI as the person types.
+const strongPassword = z
+  .string()
+  .min(8, "At least 8 characters")
+  .regex(/[A-Z]/, "At least one uppercase letter")
+  .regex(/[a-z]/, "At least one lowercase letter")
+  .regex(/[0-9]/, "At least one number")
+  .regex(/[^A-Za-z0-9]/, "At least one special character");
+
+export const signupRequestSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  workspaceName: z.string().min(2, "Workspace name must be at least 2 characters"),
+  email: z.string().email(),
+  password: strongPassword,
+});
+
+export const otpVerifySchema = z.object({
+  email: z.string().email(),
+  code: z.string().length(6, "Enter the 6-digit code"),
+});
+
+export const otpResendSchema = z.object({
+  email: z.string().email(),
+});
+
 export const signupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   workspaceName: z.string().min(2, "Workspace name must be at least 2 characters"),
   email: z.string().email(),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: strongPassword,
 });
 
 export const feedbackCreateSchema = z.object({
@@ -75,6 +102,17 @@ export const simulateChannelSchema = z.object({
     "community",
   ]),
   count: z.coerce.number().int().min(1).max(50).default(15),
+});
+
+export const memberCreateSchema = z.object({
+  name: z.string().min(2),
+  email: z.string().email(),
+  password: z.string().min(8),
+  role: z.enum(["ADMIN", "ANALYST", "VIEWER"]),
+});
+
+export const roleUpdateSchema = z.object({
+  role: z.enum(["ADMIN", "ANALYST", "VIEWER"]),
 });
 
 // AI classification response — this is what we force Claude's output to

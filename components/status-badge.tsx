@@ -1,9 +1,9 @@
 "use client";
 
 const STATUS_STYLES: Record<string, string> = {
-  NEW: "bg-blue-50 text-blue-700 border-blue-200",
-  REVIEWED: "bg-amber-50 text-amber-700 border-amber-200",
-  ACTIONED: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  NEW: "bg-signal-soft text-signal border-signal/30",
+  REVIEWED: "bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800",
+  ACTIONED: "bg-positive-soft text-positive border-positive/30",
 };
 
 export function StatusBadge({
@@ -39,12 +39,12 @@ export function StatusBadge({
 
 export function SentimentBadge({ sentiment }: { sentiment: "POS" | "NEU" | "NEG" | null }) {
   if (!sentiment) {
-    return <span className="text-xs text-slate-400">unclassified</span>;
+    return <span className="text-xs text-ink-faint">unclassified</span>;
   }
   const styles = {
-    POS: "bg-emerald-50 text-emerald-700",
-    NEU: "bg-slate-100 text-slate-600",
-    NEG: "bg-red-50 text-red-700",
+    POS: "bg-positive-soft text-positive",
+    NEU: "bg-neutral-soft text-ink-soft",
+    NEG: "bg-negative-soft text-negative",
   };
   const labels = { POS: "Positive", NEU: "Neutral", NEG: "Negative" };
   return (

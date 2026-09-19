@@ -14,13 +14,13 @@ export default async function InboxPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-8">
-      <h1 className="text-xl font-semibold text-slate-900">Inbox</h1>
-      <p className="mt-1 text-sm text-slate-500">
+      <h1 className="text-xl font-semibold text-ink">Inbox</h1>
+      <p className="mt-1 text-sm text-ink-soft">
         Search, filter, and triage all feedback in your workspace.
       </p>
 
       <div className="mt-6">
-        <Suspense fallback={<p className="text-sm text-slate-500">Loading...</p>}>
+        <Suspense fallback={<p className="text-sm text-ink-soft">Loading...</p>}>
           <InboxClient canEdit={canEdit} />
         </Suspense>
       </div>

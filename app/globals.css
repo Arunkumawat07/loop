@@ -1,26 +1,98 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
+/*
+  Design tokens for LOOP.
+  Concept: "signal & ink" — the product turns scattered customer noise
+  into a clear signal, so the palette pairs a quiet cool-grey paper with
+  a single saturated violet-blue "signal" accent, used sparingly. Text
+  runs in a deep ink navy rather than pure black. Sentiment colors
+  (positive/negative/neutral) are functional, not decorative, and stay
+  legible in both themes.
+*/
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --paper: #eff0ee;
+  --paper-raised: #f8f8f6;
+  --ink: #12141a;
+  --ink-soft: #52564f;
+  --ink-faint: #82857d;
+  --line: #d8dad3;
+  --signal: #4b3df0;
+  --signal-soft: #e7e4fc;
+  --signal-ink: #ffffff;
+  --positive: #1e8a5c;
+  --positive-soft: #e1f3e9;
+  --negative: #c13f2b;
+  --negative-soft: #fbe7e3;
+  --neutral-tone: #8d8f86;
+  --neutral-soft: #eceee8;
+}
+
+.dark {
+  --paper: #12141a;
+  --paper-raised: #1a1d24;
+  --ink: #edede6;
+  --ink-soft: #a5a8a0;
+  --ink-faint: #6e7169;
+  --line: #2a2d33;
+  --signal: #9186ff;
+  --signal-soft: #2a2559;
+  --signal-ink: #12141a;
+  --positive: #45c088;
+  --positive-soft: #143427;
+  --negative: #e2745f;
+  --negative-soft: #3a1f1a;
+  --neutral-tone: #8f9188;
+  --neutral-soft: #23261f;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-paper: var(--paper);
+  --color-paper-raised: var(--paper-raised);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-line: var(--line);
+  --color-signal: var(--signal);
+  --color-signal-soft: var(--signal-soft);
+  --color-signal-ink: var(--signal-ink);
+  --color-positive: var(--positive);
+  --color-positive-soft: var(--positive-soft);
+  --color-negative: var(--negative);
+  --color-negative-soft: var(--negative-soft);
+  --color-neutral-tone: var(--neutral-tone);
+  --color-neutral-soft: var(--neutral-soft);
+  --font-display: var(--font-space-grotesk);
+  --font-body: var(--font-plex-sans);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+h1, h2, h3, h4, .font-display {
+  font-family: var(--font-display), system-ui, sans-serif;
+}
+
+/* Tabular figures for stat numbers and tables — data should line up. */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+* {
+  border-color: var(--line);
+}
+
+:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
 }

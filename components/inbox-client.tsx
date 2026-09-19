@@ -190,19 +190,19 @@ export function InboxClient({ canEdit }: { canEdit: boolean }) {
     <main className="mx-auto max-w-6xl px-6 py-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">Inbox</h1>
-          <p className="mt-1 text-sm text-slate-500">Search, filter, and triage feedback</p>
+          <h1 className="text-xl font-semibold text-ink">Inbox</h1>
+          <p className="mt-1 text-sm text-ink-soft">Search, filter, and triage feedback</p>
         </div>
 
         {canEdit && (
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setShowAddForm((v) => !v)}
-              className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
+              className="rounded-md bg-signal px-3 py-1.5 text-sm font-medium text-signal-ink hover:opacity-90"
             >
               + Add feedback
             </button>
-            <label className="cursor-pointer rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+            <label className="cursor-pointer rounded-md border border-line bg-paper-raised px-3 py-1.5 text-sm font-medium text-ink-soft hover:bg-paper">
               {importing ? "Importing..." : "Import CSV"}
               <input type="file" accept=".csv" className="hidden" onChange={handleCsvUpload} disabled={importing} />
             </label>
@@ -212,11 +212,11 @@ export function InboxClient({ canEdit }: { canEdit: boolean }) {
       </div>
 
       {importSummary && (
-        <div className="mt-3 rounded-md bg-slate-100 px-3 py-2 text-sm text-slate-700">{importSummary}</div>
+        <div className="mt-3 rounded-md bg-paper px-3 py-2 text-sm text-ink-soft">{importSummary}</div>
       )}
 
       {showAddForm && canEdit && (
-        <form onSubmit={handleAddSubmit} className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
+        <form onSubmit={handleAddSubmit} className="mt-4 rounded-lg border border-line bg-paper-raised p-4">
           <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
             <textarea
               required
@@ -224,12 +224,12 @@ export function InboxClient({ canEdit }: { canEdit: boolean }) {
               onChange={(e) => setNewContent(e.target.value)}
               placeholder="What did the customer say?"
               rows={2}
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="rounded-md border border-line px-3 py-2 text-sm focus:border-signal focus:outline-none focus:ring-1 focus:ring-signal"
             />
             <select
               value={newChannel}
               onChange={(e) => setNewChannel(e.target.value)}
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+              className="rounded-md border border-line px-3 py-2 text-sm"
             >
               {CHANNELS.map((c) => (
                 <option key={c} value={c}>
@@ -241,7 +241,7 @@ export function InboxClient({ canEdit }: { canEdit: boolean }) {
           <button
             type="submit"
             disabled={submitting}
-            className="mt-3 rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+            className="mt-3 rounded-md bg-signal px-3 py-1.5 text-sm font-medium text-signal-ink hover:opacity-90 disabled:opacity-60"
           >
             {submitting ? "Adding..." : "Add"}
           </button>
@@ -254,12 +254,12 @@ export function InboxClient({ canEdit }: { canEdit: boolean }) {
           value={filters.search}
           onChange={(e) => updateFilter("search", e.target.value)}
           placeholder="Search feedback..."
-          className="w-56 rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="w-56 rounded-md border border-line px-3 py-1.5 text-sm focus:border-signal focus:outline-none focus:ring-1 focus:ring-signal"
         />
         <select
           value={filters.channel}
           onChange={(e) => updateFilter("channel", e.target.value)}
-          className="rounded-md border border-slate-300 px-3 py-1.5 text-sm"
+          className="rounded-md border border-line px-3 py-1.5 text-sm"
         >
           <option value="">All channels</option>
           {CHANNELS.map((c) => (
@@ -271,7 +271,7 @@ export function InboxClient({ canEdit }: { canEdit: boolean }) {
         <select
           value={filters.sentiment}
           onChange={(e) => updateFilter("sentiment", e.target.value)}
-          className="rounded-md border border-slate-300 px-3 py-1.5 text-sm"
+          className="rounded-md border border-line px-3 py-1.5 text-sm"
         >
           <option value="">All sentiment</option>
           <option value="POS">Positive</option>
@@ -281,7 +281,7 @@ export function InboxClient({ canEdit }: { canEdit: boolean }) {
         <select
           value={filters.status}
           onChange={(e) => updateFilter("status", e.target.value)}
-          className="rounded-md border border-slate-300 px-3 py-1.5 text-sm"
+          className="rounded-md border border-line px-3 py-1.5 text-sm"
         >
           <option value="">All statuses</option>
           <option value="NEW">New</option>
@@ -291,7 +291,7 @@ export function InboxClient({ canEdit }: { canEdit: boolean }) {
         {filters.themeId && (
           <button
             onClick={() => updateFilter("themeId", "")}
-            className="flex items-center gap-1 rounded-md border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-sm text-indigo-700 hover:bg-indigo-100"
+            className="flex items-center gap-1 rounded-md border border-signal/30 bg-signal-soft px-3 py-1.5 text-sm text-signal hover:opacity-80"
           >
             Theme filter active
             <span aria-hidden>×</span>
@@ -300,22 +300,22 @@ export function InboxClient({ canEdit }: { canEdit: boolean }) {
       </div>
 
       {/* Table */}
-      <div className="mt-4 overflow-hidden rounded-lg border border-slate-200 bg-white">
-        {error && <div className="p-4 text-sm text-red-600">{error}</div>}
+      <div className="mt-4 overflow-hidden rounded-lg border border-line bg-paper-raised">
+        {error && <div className="p-4 text-sm text-negative">{error}</div>}
 
         {!error && loading && (
-          <div className="p-8 text-center text-sm text-slate-400">Loading feedback...</div>
+          <div className="p-8 text-center text-sm text-ink-faint">Loading feedback...</div>
         )}
 
         {!error && !loading && items.length === 0 && (
-          <div className="p-8 text-center text-sm text-slate-400">
+          <div className="p-8 text-center text-sm text-ink-faint">
             No feedback matches these filters yet.
           </div>
         )}
 
         {!error && !loading && items.length > 0 && (
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <thead className="border-b border-line bg-paper text-xs uppercase tracking-wide text-ink-soft">
               <tr>
                 <th className="px-4 py-2 font-medium">Content</th>
                 <th className="px-4 py-2 font-medium">Channel</th>
@@ -326,15 +326,15 @@ export function InboxClient({ canEdit }: { canEdit: boolean }) {
                 {canEdit && <th className="px-4 py-2 font-medium">AI</th>}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-line">
               {items.map((item) => (
-                <tr key={item.id} className="align-top hover:bg-slate-50">
-                  <td className="max-w-md px-4 py-3 text-slate-800">{item.content}</td>
-                  <td className="px-4 py-3 text-slate-600">{CHANNEL_LABELS[item.channel] ?? item.channel}</td>
+                <tr key={item.id} className="align-top hover:bg-paper">
+                  <td className="max-w-md px-4 py-3 text-ink">{item.content}</td>
+                  <td className="px-4 py-3 text-ink-soft">{CHANNEL_LABELS[item.channel] ?? item.channel}</td>
                   <td className="max-w-[160px] px-4 py-3">
                     <div className="flex flex-wrap gap-1">
                       {item.themes.length === 0 && (
-                        <span className="text-xs text-slate-400">—</span>
+                        <span className="text-xs text-ink-faint">—</span>
                       )}
                       {item.themes.map(({ theme }) => (
                         <span
@@ -357,7 +357,7 @@ export function InboxClient({ canEdit }: { canEdit: boolean }) {
                       onChange={canEdit ? (s) => handleStatusChange(item.id, s) : undefined}
                     />
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-xs text-slate-400">
+                  <td className="whitespace-nowrap px-4 py-3 text-xs text-ink-faint">
                     {new Date(item.createdAt).toLocaleDateString()}
                   </td>
                   {canEdit && (
@@ -365,7 +365,7 @@ export function InboxClient({ canEdit }: { canEdit: boolean }) {
                       <button
                         onClick={() => handleReclassify(item.id)}
                         disabled={reclassifyingId === item.id}
-                        className="text-xs font-medium text-indigo-600 hover:text-indigo-700 disabled:opacity-50"
+                        className="text-xs font-medium text-signal hover:opacity-80 disabled:opacity-50"
                       >
                         {reclassifyingId === item.id ? "..." : "Re-classify"}
                       </button>
@@ -398,12 +398,12 @@ function SimulateMenu({
       <button
         onClick={() => setOpen((v) => !v)}
         disabled={disabled}
-        className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+        className="rounded-md border border-line bg-paper-raised px-3 py-1.5 text-sm font-medium text-ink-soft hover:bg-paper disabled:opacity-60"
       >
         {disabled ? "Pulling..." : "Simulate channel ▾"}
       </button>
       {open && (
-        <div className="absolute right-0 z-10 mt-1 w-48 rounded-md border border-slate-200 bg-white py-1 shadow-lg">
+        <div className="absolute right-0 z-10 mt-1 w-48 rounded-md border border-line bg-paper-raised py-1 shadow-lg">
           {CHANNELS.map((c) => (
             <button
               key={c}
@@ -411,7 +411,7 @@ function SimulateMenu({
                 onSimulate(c);
                 setOpen(false);
               }}
-              className="block w-full px-3 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+              className="block w-full px-3 py-1.5 text-left text-sm text-ink-soft hover:bg-paper"
             >
               Pull from {CHANNEL_LABELS[c]}
             </button>

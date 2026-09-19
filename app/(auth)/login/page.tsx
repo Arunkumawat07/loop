@@ -4,6 +4,8 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { AuthPanel } from "@/components/auth-panel";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,11 +19,7 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    const result = await signIn("credentials", { email, password, redirect: false });
 
     setLoading(false);
 
@@ -34,65 +32,72 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold text-slate-900">LOOP</h1>
-          <p className="mt-1 text-sm text-slate-500">Sign in to your workspace</p>
-        </div>
+    <main className="flex min-h-screen bg-paper">
+      <AuthPanel tagline="Close the loop on customer feedback." />
 
-        <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          {error && (
-            <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-              {error}
+      <div className="flex flex-1 flex-col justify-center px-6 py-10 sm:px-12 lg:px-20">
+        <div className="mx-auto w-full max-w-sm">
+          <div className="mb-8 flex items-center justify-between md:hidden">
+            <span className="font-display text-lg font-semibold text-ink">LOOP</span>
+            <ThemeToggle />
+          </div>
+
+          <h1 className="font-display text-2xl font-semibold text-ink">Welcome back</h1>
+          <p className="mt-1 text-sm text-ink-soft">Sign in to your workspace</p>
+
+          <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+            {error && (
+              <div className="rounded-md bg-negative-soft px-3 py-2 text-sm text-negative">
+                {error}
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-ink">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="mt-1.5 w-full rounded-md border border-line bg-paper-raised px-3 py-2.5 text-sm text-ink outline-none transition focus:border-signal focus:ring-1 focus:ring-signal"
+                placeholder="you@company.com"
+              />
             </div>
-          )}
 
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-slate-700">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              placeholder="you@company.com"
-            />
-          </div>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-ink">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="mt-1.5 w-full rounded-md border border-line bg-paper-raised px-3 py-2.5 text-sm text-ink outline-none transition focus:border-signal focus:ring-1 focus:ring-signal"
+                placeholder="••••••••"
+              />
+            </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-slate-700">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              placeholder="••••••••"
-            />
-          </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-md bg-signal px-3 py-2.5 text-sm font-medium text-signal-ink transition hover:opacity-90 disabled:opacity-60"
+            >
+              {loading ? "Signing in..." : "Sign in"}
+            </button>
+          </form>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:opacity-60"
-          >
-            {loading ? "Signing in..." : "Sign in"}
-          </button>
-        </form>
-
-        <p className="mt-4 text-center text-sm text-slate-500">
-          No workspace yet?{" "}
-          <Link href="/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
-            Create one
-          </Link>
-        </p>
+          <p className="mt-6 text-center text-sm text-ink-soft">
+            No workspace yet?{" "}
+            <Link href="/signup" className="font-medium text-signal hover:underline">
+              Create one
+            </Link>
+          </p>
+        </div>
       </div>
     </main>
   );

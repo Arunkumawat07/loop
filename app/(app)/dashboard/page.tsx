@@ -14,30 +14,41 @@ export default async function DashboardPage() {
   const summary = await getDashboardSummary(session.user.workspaceId, 30);
 
   return (
-    <main className="mx-auto max-w-6xl px-6 py-8">
-      <h1 className="text-xl font-semibold text-slate-900">Dashboard</h1>
-      <p className="mt-1 text-sm text-slate-500">Last 30 days, {session.user.email}'s workspace</p>
+    <main className="mx-auto max-w-6xl px-4 py-8 sm:px-8">
+      <h1 className="font-display text-xl font-semibold text-ink">Dashboard</h1>
+      <p className="mt-1 text-sm text-ink-soft">
+        Last 30 days · {session.user.email}'s workspace
+      </p>
 
-      <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
-        <StatCard label="Total feedback" value={summary.stats.totalItems} />
-        <StatCard label="Negative" value={`${summary.stats.negativePct}%`} />
-        <StatCard label="New this week" value={summary.stats.newThisWeek} />
+      {/* Hero stat + two supporting figures, divided by hairlines rather
+         than boxed into identical cards — the total feedback count gets
+         the visual weight since it's the headline number. */}
+      <div className="mt-8 flex flex-col divide-y divide-line border-y border-line sm:flex-row sm:divide-x sm:divide-y-0">
+        <div className="flex-1 py-4 pr-6 sm:py-0 sm:pb-0">
+          <p className="text-sm text-ink-soft">Total feedback</p>
+          <p className="font-display tabular-nums mt-1 text-5xl font-semibold text-ink">
+            {summary.stats.totalItems}
+          </p>
+        </div>
+        <div className="flex-1 py-4 sm:py-0 sm:px-6">
+          <p className="text-sm text-ink-soft">Negative</p>
+          <p className="font-display tabular-nums mt-1 text-3xl font-semibold text-negative">
+            {summary.stats.negativePct}%
+          </p>
+        </div>
+        <div className="flex-1 py-4 sm:py-0 sm:pl-6">
+          <p className="text-sm text-ink-soft">New this week</p>
+          <p className="font-display tabular-nums mt-1 text-3xl font-semibold text-ink">
+            {summary.stats.newThisWeek}
+          </p>
+        </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <VolumeChart data={summary.volume} />
         <SentimentChart data={summary.sentiment} />
         <TopThemesChart data={summary.topThemes} />
       </div>
     </main>
-  );
-}
-
-function StatCard({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
-      <p className="text-sm text-slate-500">{label}</p>
-      <p className="mt-1 text-2xl font-semibold text-slate-900">{value}</p>
-    </div>
   );
 }

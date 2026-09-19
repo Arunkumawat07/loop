@@ -67,8 +67,8 @@ export default function AskLoopPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-8">
-      <h1 className="text-xl font-semibold text-slate-900">Ask LOOP</h1>
-      <p className="mt-1 text-sm text-slate-500">
+      <h1 className="text-xl font-semibold text-ink">Ask LOOP</h1>
+      <p className="mt-1 text-sm text-ink-soft">
         Ask a plain-English question. Answers are grounded in your workspace's
         actual feedback and cite the specific items they're based on.
       </p>
@@ -84,12 +84,12 @@ export default function AskLoopPage() {
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           placeholder="What are users saying about onboarding?"
-          className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="flex-1 rounded-md border border-line px-3 py-2 text-sm focus:border-signal focus:outline-none focus:ring-1 focus:ring-signal"
         />
         <button
           type="submit"
           disabled={loading || !question.trim()}
-          className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:opacity-60"
+          className="rounded-md bg-signal px-4 py-2 text-sm font-medium text-signal-ink transition hover:opacity-90 disabled:opacity-60"
         >
           {loading ? "Thinking..." : "Ask"}
         </button>
@@ -101,7 +101,7 @@ export default function AskLoopPage() {
             <button
               key={q}
               onClick={() => handleAsk(q)}
-              className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600 hover:border-indigo-300 hover:text-indigo-700"
+              className="rounded-full border border-line bg-paper-raised px-3 py-1.5 text-xs text-ink-soft hover:border-signal/40 hover:opacity-80"
             >
               {q}
             </button>
@@ -110,23 +110,23 @@ export default function AskLoopPage() {
       )}
 
       {error && (
-        <div className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+        <div className="mt-4 rounded-md bg-negative-soft px-3 py-2 text-sm text-negative">{error}</div>
       )}
 
       <div className="mt-6 space-y-6">
         {exchanges.map((ex, i) => (
-          <div key={i} className="rounded-lg border border-slate-200 bg-white p-4">
-            <p className="text-sm font-medium text-slate-900">{ex.question}</p>
-            <p className="mt-2 text-sm text-slate-700">{ex.answer}</p>
+          <div key={i} className="rounded-lg border border-line bg-paper-raised p-4">
+            <p className="text-sm font-medium text-ink">{ex.question}</p>
+            <p className="mt-2 text-sm text-ink-soft">{ex.answer}</p>
 
             {ex.citedItems.length > 0 && (
-              <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+              <div className="mt-3 space-y-2 border-t border-line pt-3">
+                <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">
                   Based on {ex.citedItems.length} feedback item{ex.citedItems.length > 1 ? "s" : ""}
                 </p>
                 {ex.citedItems.map((item) => (
-                  <div key={item.id} className="rounded-md bg-slate-50 p-2 text-xs text-slate-600">
-                    <span className="font-medium text-slate-500">
+                  <div key={item.id} className="rounded-md bg-paper p-2 text-xs text-ink-soft">
+                    <span className="font-medium text-ink-soft">
                       {item.channel} · {item.sentiment ? SENTIMENT_LABEL[item.sentiment] : "unclassified"}
                     </span>
                     <p className="mt-0.5">{item.content}</p>
