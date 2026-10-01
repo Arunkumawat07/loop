@@ -1,18 +1,17 @@
 import { classificationResultSchema } from "@/lib/validation/schemas";
-import { anthropicClient, MODEL, stripCodeFences } from "@/lib/ai-client";
+import { generateJson, stripCodeFences } from "@/lib/ai-client";
 import type { z } from "zod";
 
 export type ClassificationResult = z.infer<typeof classificationResultSchema>;
 
 /**
  * AI1 — Auto-classification (Section 09.1).
- * Sends one feedback item to Claude and asks for strictly structured
+ * Sends one feedback item to Gemini and asks for strictly structured
  * JSON: sentiment, sentimentScore, themes, featureArea, rationale.
- * We pass the workspace's existing theme names so the model reuses
- * themes instead of inventing a slightly-different name every time.
- * Retries once on a parse/validation failure, then throws so the
- * caller can flag the item for manual review instead of silently
- * saving garbage.
+ * generateJson() (lib/ai-client.ts) already retries on transient 503
+ * overload errors with backoff; here we additionally retry once on a
+ * parse/validation failure specifically (malformed JSON, wrong shape),
+ * which is a different failure mode than server overload.
  */
 export async function classifyFeedback(
   content: string,
@@ -33,7 +32,7 @@ Feedback:
 ${content}
 """
 
-Return ONLY a JSON object, no markdown fences, no commentary, matching exactly this shape:
+Return a JSON object matching exactly this shape:
 {
   "sentiment": "POS" | "NEU" | "NEG",
   "sentimentScore": number between -1 and 1,
@@ -43,18 +42,8 @@ Return ONLY a JSON object, no markdown fences, no commentary, matching exactly t
 }`;
 
   async function attempt(): Promise<ClassificationResult> {
-    const response = await anthropicClient.messages.create({
-      model: MODEL,
-      max_tokens: 500,
-      messages: [{ role: "user", content: prompt }],
-    });
-
-    const textBlock = response.content.find((b) => b.type === "text");
-    if (!textBlock || textBlock.type !== "text") {
-      throw new Error("Claude returned no text content");
-    }
-
-    const cleaned = stripCodeFences(textBlock.text);
+    const text = await generateJson(prompt);
+    const cleaned = stripCodeFences(text);
     const json = JSON.parse(cleaned);
     return classificationResultSchema.parse(json);
   }
@@ -62,8 +51,6 @@ Return ONLY a JSON object, no markdown fences, no commentary, matching exactly t
   try {
     return await attempt();
   } catch (firstError) {
-    // One retry — covers the occasional malformed-JSON response without
-    // burning tokens indefinitely on a genuinely bad input.
     try {
       return await attempt();
     } catch (secondError) {
@@ -83,11 +70,9 @@ export type GroundedAnswer = {
 
 /**
  * AI3 — Ask LOOP (Section 09.2). Retrieve-then-answer.
- * The caller is responsible for retrieval (see lib/search.ts); this
- * function only handles the "answer strictly from what you were given"
- * half. Grounding is mandatory: the prompt explicitly forbids the model
- * from using anything outside the provided items, and asks it to say so
- * when the data doesn't cover the question rather than guessing.
+ * The caller (see lib/search.ts) handles retrieval; this only handles
+ * "answer strictly from what you were given." Grounding is mandatory —
+ * the prompt forbids using anything outside the provided items.
  */
 export async function answerFromFeedback(
   question: string,
@@ -117,24 +102,14 @@ Instructions:
 - Refer to items by their bracket number, e.g. "[1]" or "[2][4]", so the reader can trace your answer back to specific feedback.
 - If the items don't really address the question, say that directly.
 
-Return ONLY a JSON object, no markdown fences:
+Return a JSON object:
 {
   "answer": string,
   "usedIndices": [number, ...] (the bracket numbers you actually cited, e.g. [1, 3])
 }`;
 
-  const response = await anthropicClient.messages.create({
-    model: MODEL,
-    max_tokens: 600,
-    messages: [{ role: "user", content: prompt }],
-  });
-
-  const textBlock = response.content.find((b) => b.type === "text");
-  if (!textBlock || textBlock.type !== "text") {
-    throw new Error("Claude returned no text content");
-  }
-
-  const cleaned = stripCodeFences(textBlock.text);
+  const text = await generateJson(prompt);
+  const cleaned = stripCodeFences(text);
   const parsed = JSON.parse(cleaned) as { answer: string; usedIndices: number[] };
 
   const usedItemIds = parsed.usedIndices

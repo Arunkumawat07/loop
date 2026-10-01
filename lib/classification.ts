@@ -59,7 +59,7 @@ export async function classifyAndStoreFeedback(
           data: { feedbackId, themeId: theme.id, confidence: 0.9 },
         });
       }
-    });
+    }, { timeout: 15000, maxWait: 10000 });
 
     return { ok: true };
   } catch (err) {
