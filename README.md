@@ -4,13 +4,13 @@
 > "Close the loop on customer feedback."
 
 LOOP ingests multi-channel customer feedback (support tickets, app-store
-reviews, NPS surveys, sales notes, community posts), uses Claude to
+reviews, NPS surveys, sales notes, community posts), uses AI to
 classify and cluster it, surfaces trending themes, answers plain-English
 questions grounded in the actual feedback, and generates a shareable
 Voice-of-Customer report — all inside a secure, multi-tenant workspace
 with role-based access control.
 
-**Live demo:** _add your Vercel URL here_
+**Live demo:** https://loop-qy61y2tyw-loop-ad37.vercel.app/
 **Demo video:** _add your video link here_
 
 ## Status
@@ -30,22 +30,33 @@ All four milestones are complete:
 - **Inbox** — server-side pagination, full-text search, filters (channel / sentiment / status / theme / date range), and a status workflow (New → Reviewed → Actioned)
 - **Analytics dashboard** — live charts for volume over time, sentiment breakdown, and top themes, plus headline stats
 
-### AI (Claude)
-- **Auto-classification (AI1)** — every new feedback item is sent to Claude on ingest and comes back tagged with sentiment, a sentiment score, 1–3 themes, and a feature area, returned as validated structured JSON. A manual "Re-classify" action is available per item.
+### AI (Google Gemini)
+- **Auto-classification (AI1)** — every new feedback item is sent to Gemini on ingest and comes back tagged with sentiment, a sentiment score, 1–3 themes, and a feature area, returned as validated structured JSON. A manual "Re-classify" action is available per item.
 - **Theme clustering & trends (AI2)** — feedback is grouped into themes automatically (reusing existing themes where they fit), and the Trends page flags themes spiking 30%+ week-over-week.
-- **Ask LOOP (AI3)** — a grounded Q&A box. Retrieval (keyword-relevance ranking over the workspace's feedback) runs first, then Claude answers **using only the retrieved items** and cites which ones it used — it's explicitly instructed to say so rather than invent an answer if the data doesn't cover the question.
-- **Voice-of-Customer report (AI4)** — pick a period, and Claude writes a narrative summary and recommended actions around numbers that are pre-computed in code (not by the model), so the report can't hallucinate statistics. Reports are saved, viewable later, and exportable as a PDF via the browser's print dialog.
+- **Ask LOOP (AI3)** — a grounded Q&A box. Retrieval (keyword-relevance ranking over the workspace's feedback) runs first, then Gemini answers **using only the retrieved items** and cites which ones it used — it's explicitly instructed to say so rather than invent an answer if the data doesn't cover the question.
+- **Voice-of-Customer report (AI4)** — pick a period, and Gemini writes a narrative summary and recommended actions around numbers that are pre-computed in code (not by the model), so the report can't hallucinate statistics. Reports are saved, viewable later, and exportable as a PDF via the browser's print dialog.
+
+> **Scope note — AI provider:** the brief specifies the Anthropic Claude
+> API. This project uses the **Google Gemini API** instead
+> (`gemini-3.1-flash-lite`), switched with my mentor's approval after an
+> Anthropic account billing/credits blocker. All four AI features, the
+> structured-JSON classification approach, and the retrieval-then-answer
+> grounding pattern are implemented exactly as the brief specifies in
+> Section 09 — only the model provider differs. The integration lives
+> entirely in `lib/ai-client.ts`, `lib/ai.ts`, and `lib/reports.ts`, so
+> swapping providers again would only mean changing those three files.
 
 ### Auth & security
 - **Email verification via OTP** on signup — a 6-digit code with a 10-minute expiry and a 5-attempt limit before the account (Workspace + Admin user) is actually created.
 
-  > **Scope note:** real email/SMS delivery is explicitly out of scope for
-  > this project (see the brief, Section 4.2). The OTP is generated,
-  > stored, and verified exactly as a production flow would — only the
-  > delivery channel is swapped out: the code is returned directly in the
-  > API response and shown in a clearly-labeled "dev preview" banner on
-  > the signup screen instead of being emailed. Wiring in a real email
-  > provider (e.g. Resend) would mean removing `devCode` from
+  > **Scope note — OTP delivery:** real email/SMS delivery is explicitly
+  > out of scope for this project (see the brief, Section 4.2). The OTP
+  > is generated, stored, and verified exactly as a production flow
+  > would — only the delivery channel is swapped out: the code is
+  > returned directly in the API response and shown in a
+  > clearly-labeled "dev preview" banner on the signup screen instead of
+  > being emailed. Wiring in a real email provider (e.g. Resend) would
+  > mean removing `devCode` from
   > `app/api/auth/signup/request-otp/route.ts` and calling the provider
   > there instead.
 
@@ -67,7 +78,7 @@ All four milestones are complete:
 | Database | PostgreSQL (Neon / Supabase free tier) |
 | ORM | Prisma |
 | Auth | NextAuth (Auth.js) v5, credentials provider + OTP email verification |
-| AI | Anthropic Claude API (`claude-sonnet-4-5`) |
+| AI | Google Gemini API (`gemini-3.1-flash-lite`) — see scope note above |
 | Validation | Zod |
 | Charts | Recharts |
 | Deployment | Vercel |
@@ -77,7 +88,7 @@ All four milestones are complete:
 ### 1. Prerequisites
 - Node.js 18+ and npm
 - A free PostgreSQL database — [Neon](https://neon.tech) or [Supabase](https://supabase.com)
-- An Anthropic API key with some credit balance (needed for AI1–AI4)
+- A free Google Gemini API key — [Google AI Studio](https://aistudio.google.com/apikey)
 
 ### 2. Install
 ```bash
@@ -96,7 +107,12 @@ cp .env.example .env
 | `DATABASE_URL` | PostgreSQL connection string from Neon/Supabase |
 | `NEXTAUTH_SECRET` | Random secret — generate with `openssl rand -base64 32` |
 | `NEXTAUTH_URL` | `http://localhost:3000` locally, your production URL when deployed |
-   GEMINI_API_KEY="your-gemini-api-key-here"
+| `GEMINI_API_KEY` | Your Google Gemini API key (server-side only, never exposed to the browser) |
+
+> **Never commit real keys.** `.env` is already in `.gitignore`. If a
+> real key is ever accidentally pasted into a tracked file (like this
+> README), GitHub's push protection will block the push — remove the
+> key, amend or reset the commit, and rotate the key as a precaution.
 
 ### 4. Database
 ```bash
@@ -129,7 +145,7 @@ npm run dev
 ## Architecture
 
 Three-tier: browser → Next.js Route Handlers (API layer) → PostgreSQL,
-with Claude called server-side only.
+with Gemini called server-side only.
 
 ```
 Client (React Server/Client Components)
@@ -138,7 +154,7 @@ Client (React Server/Client Components)
 API layer — app/api/**  (auth guard → role guard → workspaceId scoping → Zod validation)
         │
         ├──▶ Prisma ──▶ PostgreSQL   (every tenant table has workspaceId)
-        └──▶ Claude API (server-side only, never called from the browser)
+        └──▶ Gemini API (server-side only, never called from the browser)
 ```
 
 **Non-negotiable rule:** every query in `/lib` and `/app/api` that touches
@@ -150,10 +166,19 @@ client-supplied value. See `lib/guard.ts`.
 keyword-overlap scoring rather than true vector embeddings, to avoid
 requiring a second external API/account for this project's scope. To
 upgrade to semantic search: populate the existing `Embedding` model on
-ingest via a hosted embeddings provider (e.g. Voyage AI), then swap
+ingest via a hosted embeddings provider, then swap
 `retrieveRelevantFeedback`'s body for a pgvector cosine-similarity query
 — the rest of the Ask LOOP pipeline (grounded answer + citations)
 doesn't need to change.
+
+**AI reliability note:** `lib/ai-client.ts` retries automatically on
+transient Gemini errors (503 "high demand" and 429 rate-limit
+responses), honoring the exact wait time Gemini's API returns rather
+than guessing. `gemini-3.1-flash-lite` was chosen over the newest
+flagship model specifically because its free-tier rate limit is high
+enough for this project's batch operations (CSV import, simulate
+channel), which can trigger several classification calls in quick
+succession.
 
 ## Project structure
 
@@ -181,7 +206,7 @@ loop/
     password-strength.tsx           # live password checklist
     inbox-client.tsx, reports-client.tsx, members-client.tsx
   lib/
-    ai.ts, ai-client.ts             # Claude calls: classify, answer
+    ai.ts, ai-client.ts             # Gemini calls: classify, answer (+ retry/backoff)
     reports.ts                      # VoC report generation
     search.ts                       # Ask LOOP retrieval
     classification.ts               # persists AI classification results
@@ -207,10 +232,15 @@ Role checks are enforced **server-side** in every API route (`lib/guard.ts`
 
 ## Screenshots
 
-_Add screenshots here — dashboard, inbox, trends, Ask LOOP, and a VoC report look good in both light and dark mode._
+![Dashboard](image.png)
+![Inbox](image-1.png)
+![Trends](image-2.png)
+![Ask LOOP](image-3.png)
+![Report](image-4.png)
 
 ## Known trade-offs (documented, not accidental)
 
+- **AI provider is Google Gemini, not Anthropic Claude** — see the scope note under "AI" above.
 - **Ask LOOP retrieval is lexical, not vector-based** — see the architecture note above.
 - **OTP delivery is simulated** (shown on-screen, not emailed) — real email/SMS is out of scope per the brief.
 - **AI calls are awaited inline** rather than queued in a background job — acceptable at this project's data volumes; a production system at scale would move classification to a job queue.
