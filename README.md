@@ -11,7 +11,7 @@ Voice-of-Customer report — all inside a secure, multi-tenant workspace
 with role-based access control.
 
 **Live demo:** https://loop-qy61y2tyw-loop-ad37.vercel.app/
-**Demo video:** _add your video link here_
+**Demo video:** https://drive.google.com/file/d/1WUgyVHFXXSbRvpYMyhgT1PrPn30Z8-zW/view?usp=drive_link
 
 ## Status
 
